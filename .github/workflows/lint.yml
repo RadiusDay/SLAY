@@ -1,0 +1,22 @@
+name: "Lint Check"
+concurrency:
+    group: "pr-checks-${{ github.event.number }}"
+    cancel-in-progress: true
+"on":
+    pull_request: null
+    push: null
+    workflow_dispatch: null
+jobs:
+    lint:
+        runs-on: "macos-15"
+        steps:
+            - name: "Checkout repository"
+              uses: "actions/checkout@v4"
+            - name: "Setup Xcode version"
+              uses: "maxim-lobanov/setup-xcode@v1.6.0"
+              with:
+                  xcode-version: "16.3"
+            - name: "Swift Version"
+              run: "swift --version"
+            - name: "Lint"
+              run: "swift format lint --strict --recursive ."
