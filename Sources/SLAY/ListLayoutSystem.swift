@@ -112,25 +112,31 @@ public final class ListLayoutSystem: LayoutSystem {
             public var id: Self { self }
             /// The anchor point for positioning the UI object.
             /// (0,0) is the top-left corner, (1,1) is the bottom-right corner.
+            /// In layoutDirectionAware mode, (0,0) is the top-start corner, (1,1) is the bottom-end corner.
             public var anchorPoint: Vector2 = .zero
             /// The position of the UI object relative to its parent, using layout dimensions.
             public var x: LayoutDimension = .offset(0)
             /// The position of the UI object relative to its parent, using layout dimensions.
             public var y: LayoutDimension = .offset(0)
+            /// If the UI object should be positioned relative to layout direction.
+            public var layoutDirectionRelative: Bool = true
 
             /// Create a new instance of the layout settings.
             /// - Parameters:
             ///   - anchorPoint: The anchor point for positioning the UI object.
             ///   - x: The x position relative to the parent.
             ///   - y: The y position relative to the parent.
+            ///   - layoutDirectionRelative: If the UI object should be positioned relative to layout direction.
             public init(
                 anchorPoint: Vector2 = .zero,
                 x: LayoutDimension = .offset(0),
-                y: LayoutDimension = .offset(0)
+                y: LayoutDimension = .offset(0),
+                layoutDirectionRelative: Bool = true
             ) {
                 self.anchorPoint = anchorPoint
                 self.x = x
                 self.y = y
+                self.layoutDirectionRelative = layoutDirectionRelative
             }
         }
 
@@ -169,12 +175,21 @@ public final class ListLayoutSystem: LayoutSystem {
         ///   - anchorPoint: The anchor point for positioning the UI object.
         ///   - x: The x position relative to the parent.
         ///   - y: The y position relative to the parent.
+        ///   - layoutDirectionRelative: If the UI object should be positioned relative to layout direction.
         public init(
             anchorPoint: Vector2 = .zero,
             x: LayoutDimension = .offset(0),
-            y: LayoutDimension = .offset(0)
+            y: LayoutDimension = .offset(0),
+            layoutDirectionRelative: Bool = true
         ) {
-            self = .absolute(Absolute(anchorPoint: anchorPoint, x: x, y: y))
+            self = .absolute(
+                Absolute(
+                    anchorPoint: anchorPoint,
+                    x: x,
+                    y: y,
+                    layoutDirectionRelative: layoutDirectionRelative
+                )
+            )
         }
 
         public static var defaultValue: LayoutProperties {
@@ -574,9 +589,19 @@ public final class ListLayoutSystem: LayoutSystem {
                 )
             }
             guard case .absolute(let absSettings) = childSettings else { continue }
+            var childX: Double
+            if absSettings.layoutDirectionRelative && env.layoutDirection == .rightToLeft {
+                childX =
+                    paddedPosition.x + paddedSize.x
+                    - absSettings.x.resolve(parentSize: paddedSize.x)
+                    - (result.x * (1.0 - absSettings.anchorPoint.x))
+            } else {
+                childX =
+                    paddedPosition.x + absSettings.x.resolve(parentSize: paddedSize.x)
+                    - (result.x * absSettings.anchorPoint.x)
+            }
             let childPosition = Vector2(
-                x: paddedPosition.x + absSettings.x.resolve(parentSize: paddedSize.x)
-                    - (result.x * absSettings.anchorPoint.x),
+                x: childX,
                 y: paddedPosition.y + absSettings.y.resolve(parentSize: paddedSize.y)
                     - (result.y * absSettings.anchorPoint.y)
             )

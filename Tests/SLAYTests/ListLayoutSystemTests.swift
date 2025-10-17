@@ -1349,6 +1349,71 @@ import Testing
     #expect(child1.absoluteSize == Vector2(x: 100, y: 100))
 }
 
+@Test func listLayoutWithAbsoluteChildAndRTL() async throws {
+    let engine = LayoutEngine()
+    engine.env.layoutDirection = .rightToLeft
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(400)
+    root.height = .offset(400)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontal,
+        crossAxisAlignment: .start
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    child1.layoutProperties = ListLayoutSystem.LayoutProperties(
+        anchorPoint: Vector2(x: 0, y: 0.5),
+        x: .offset(10),
+        y: .scale(0.5)
+    )
+    root.addChild(child1)
+
+    engine.compute()
+
+    #expect(
+        child1.absolutePosition == Vector2(x: 290, y: 150),
+        "Absolute child should be at right center in RTL"
+    )
+    #expect(child1.absoluteSize == Vector2(x: 100, y: 100))
+}
+
+@Test func listLayoutWithAbsoluteChildAndRTLNotLayoutDirectionRelative() async throws {
+    let engine = LayoutEngine()
+    engine.env.layoutDirection = .rightToLeft
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(400)
+    root.height = .offset(400)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontal,
+        crossAxisAlignment: .start
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    child1.layoutProperties = ListLayoutSystem.LayoutProperties(
+        anchorPoint: Vector2(x: 0, y: 0.5),
+        x: .offset(10),
+        y: .scale(0.5),
+        layoutDirectionRelative: false
+    )
+    root.addChild(child1)
+
+    engine.compute()
+
+    #expect(
+        child1.absolutePosition == Vector2(x: 10, y: 150),
+        "Absolute child should be at left center when not layout direction relative"
+    )
+    #expect(child1.absoluteSize == Vector2(x: 100, y: 100))
+}
+
 @Test func horizontalLayoutMixedFlexAndFixed() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
