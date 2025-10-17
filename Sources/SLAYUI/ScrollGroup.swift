@@ -112,8 +112,8 @@ open class ScrollGroup: SyntheticUIObject {
                 )
             }
             let childPosition = Vector2(
-                x: paddedPosition.x - object._contentOffset.x,
-                y: paddedPosition.y - object._contentOffset.y
+                x: paddedPosition.x - object.contentOffset.x,
+                y: paddedPosition.y - object.contentOffset.y
             )
             return [
                 child.id: .init(absolutePosition: childPosition, absoluteSize: result)
@@ -315,19 +315,9 @@ open class ScrollGroup: SyntheticUIObject {
     /// The content view.
     public private(set) var contentView: (any UIObject)? = nil
     /// The content offset of the scroll group.
-    ///
-    /// This is a non-isolated way to get the current value of the content offset.
-    ///
-    /// DO NOT SET THIS UNLESS YOU KNOW WHAT YOU ARE DOING.
-    public var _contentOffset: Vector2 = .zero
-    /// The content offset of the scroll group.
-    @MainActor public var contentOffset: Vector2 {
-        get { _contentOffset }
-        set {
-            _contentOffset = newValue
-            (self as? ScrollGroupProtocol)?.setContentOffset(_contentOffset)
-        }
-    }
+    @PropertySignal<Vector2> public private(set) var contentOffset: Vector2 = .zero
+    /// If the initial position should be relative to the layout direction.
+    public var layoutDirectionRelative: Bool = true
     /// The scrolling direction of the scroll group.
     ///
     /// This is a non-isolated way to get the current value of the scroll direction.
@@ -358,12 +348,14 @@ open class ScrollGroup: SyntheticUIObject {
         }
     }
 
+    /// Override children to only include the content view.
     public override var childrenOrder: [UniqueID] {
         guard let contentView else {
             return []
         }
         return [contentView.id]
     }
+    /// Override children to only include the content view.
     public override var children: [UniqueID: any UIObject] {
         guard let contentView else {
             return [:]
@@ -371,12 +363,17 @@ open class ScrollGroup: SyntheticUIObject {
         return [contentView.id: contentView]
     }
 
+    /// Removes the child with the specified ID.
+    /// If the child is *not* the content view, this does nothing.
+    /// - Parameter id: The unique ID of the child to remove.
     public override func removeChild(_ id: UniqueID) {
         if contentView?.id == id {
             contentView = nil
         }
     }
 
+    /// Sets the content view of the scroll group.
+    /// - Parameter child: The new content view.
     public func setContent(_ child: (any UIObject)?) {
         if let oldValue = contentView {
             oldValue.removeFromParent()
@@ -386,5 +383,22 @@ open class ScrollGroup: SyntheticUIObject {
             LayoutEngine.modifyEngine(for: newValue, with: self.layoutEngine)
         }
         contentView = child
+        contentOffset = .zero
+        layoutEngine?.needsLayout = true
+    }
+
+    /// Sets the content offset of the scroll group.
+    /// - Parameter offset: The new content offset.
+    @MainActor public func updateContentOffset(_ offset: Vector2) {
+        contentOffset = offset
+        (self as? ScrollGroupProtocol)?.setContentOffset(offset)
+    }
+
+    /// Designed only for the embedder: sets the content offset of the scroll group.
+    ///
+    /// Do not use this method.
+    /// - Parameter offset: The new content offset.
+    public func changeContentOffsetEmbedderInternal(_ offset: Vector2) {
+        contentOffset = offset
     }
 }

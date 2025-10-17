@@ -7,6 +7,14 @@ private class SLAYNSScrollView: NSScrollView {
     public var ignoreContentOffsetChanges: Bool = true
     public var lastContentOffset: NSPoint = .zero
 
+    public override func tile() {
+        let contentViewOrigin = self.contentView.bounds.origin
+        super.tile()
+        if contentViewOrigin != self.contentView.bounds.origin {
+            self.contentView.bounds.origin = contentViewOrigin
+        }
+    }
+
     override func reflectScrolledClipView(_ clipView: NSClipView) {
         super.reflectScrolledClipView(clipView)
         guard !ignoreContentOffsetChanges else { return }
@@ -24,7 +32,6 @@ private class SLAYNSScrollView: NSScrollView {
     public override func viewDidEndLiveResize() {
         super.viewDidEndLiveResize()
         contentView.scroll(to: lastContentOffset)
-        reflectScrolledClipView(contentView)
     }
 }
 
@@ -75,7 +82,7 @@ extension ScrollGroup: ScrollGroupProtocol {
             x: horizontal
                 ? offset.x
                 : layoutEngine?.env.layoutDirection == .rightToLeft
-                    ? storage.contentSize.x - storage.lastFrameSize.x : 0,
+                    ? storage.contentSize.x - storage.preCommitSize.x : 0,
             y: vertical ? offset.y : 0
         )
     }
@@ -93,7 +100,6 @@ extension ScrollGroup: ScrollGroupProtocol {
         )
         nsScrollView.lastContentOffset = convertedOffset
         contentView.scroll(to: convertedOffset)
-        nsScrollView.reflectScrolledClipView(contentView)
     }
 
     public func setContentOffset(_ offset: Vector2) {
@@ -182,12 +188,13 @@ extension ScrollGroup: AppKitRenderable {
         scrollView.wantsLayer = true
         let layer = scrollView.makeBackingLayer()
         scrollView.layer = layer
+        scrollView.scrollsDynamically = false
         scrollView.autoresizesSubviews = false
         scrollView.automaticallyAdjustsContentInsets = false
         scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
         setElasticScrollingBehavior(_elasticScrollingBehavior)
-        setContentOffsetInternal(_contentOffset)
+        setContentOffsetInternal(contentOffset)
         updateLayerProperties(layer: layer)
         scrollView.contentOffsetChange = { [weak self] offset in
             guard let self, nsScrollView.documentView != nil else { return }
@@ -195,17 +202,17 @@ extension ScrollGroup: AppKitRenderable {
             if targetOffset != offset {
                 self.setContentOffsetInternal(targetOffset)
             }
-            if targetOffset != self._contentOffset {
+            if targetOffset != self.contentOffset {
                 layoutEngine?.needsLayout = true
             }
-            self._contentOffset = targetOffset
+            changeContentOffsetEmbedderInternal(targetOffset)
         }
 
         return scrollView
     }
 
     public func getContentOffset() -> Vector2 {
-        return _contentOffset
+        return contentOffset
     }
 
     public func setBounds(_ rect: CGRect) {
@@ -233,22 +240,29 @@ extension ScrollGroup: AppKitRenderable {
         userData = storage
         setElasticScrollingBehavior(_elasticScrollingBehavior)
 
-        if lastSize != .zero && newSize != lastSize {
-            let newContentOffsetX = _contentOffset.x - (newSize.x - lastSize.x) * scrollAnchor.x
-            let newContentOffsetY = _contentOffset.y - (newSize.y - lastSize.y) * scrollAnchor.y
+        if newSize != lastSize {
+            let realScrollAnchorX =
+                layoutDirectionRelative && layoutEngine?.env.layoutDirection == .rightToLeft
+                ? 1 - scrollAnchor.x
+                : scrollAnchor.x
+            let newContentOffsetX =
+                contentOffset.x + abs(newSize.x - lastSize.x) * realScrollAnchorX
+            let newContentOffsetY = contentOffset.y + abs(newSize.y - lastSize.y) * scrollAnchor.y
             // Clamp to child size
             let clampedX = max(0, min(newContentOffsetX, max(0, size.x - newSize.x)))
             let clampedY = max(0, min(newContentOffsetY, max(0, size.y - newSize.y)))
-            _contentOffset = Vector2(x: clampedX, y: clampedY)
+            print(clampedX, clampedY)
+            changeContentOffsetEmbedderInternal(Vector2(x: clampedX, y: clampedY))
         }
 
         // Persist the scroll position
-        setContentOffsetInternal(getTargetPosition(offset: _contentOffset))
-        nsScrollView.ignoreContentOffsetChanges = false
+        setContentOffsetInternal(getTargetPosition(offset: contentOffset))
 
         let layer = nsView.makeBackingLayer()
         nsView.layer = layer
         updateLayerProperties(layer: layer)
+
+        nsScrollView.ignoreContentOffsetChanges = false
     }
 
     public func removeAllChildViews() {

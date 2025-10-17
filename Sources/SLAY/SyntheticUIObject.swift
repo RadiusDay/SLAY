@@ -6,8 +6,8 @@ open class SyntheticUIObject: UIObject {
     public var id = UniqueID.generate()
 
     // Generated
-    public var absolutePosition: Vector2 = .zero
-    public var absoluteSize: Vector2 = .zero
+    @PropertySignal<Vector2> public var absolutePosition: Vector2 = .zero
+    @PropertySignal<Vector2> public var absoluteSize: Vector2 = .zero
 
     // Sizing
     public var minWidth: LayoutDimension? {

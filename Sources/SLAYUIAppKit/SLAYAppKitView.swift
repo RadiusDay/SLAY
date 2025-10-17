@@ -50,7 +50,9 @@ public class SLAYAppKitView: NSView {
 
             // Make y relative to bottom
             let offset = parentRenderable?.getContentOffset() ?? .zero
-            let relativeY = info.parent.absoluteSize.y - (info.position.y + info.size.y + offset.y)
+            let relativeY =
+                info.parent.absolutePosition.y + info.parent.absoluteSize.y
+                - (info.position.y + info.size.y + offset.y)
             let relativeX = info.position.x + offset.x - info.parent.absolutePosition.x
             objectView.translatesAutoresizingMaskIntoConstraints = false
             renderable.setBounds(
