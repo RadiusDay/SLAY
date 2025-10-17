@@ -52,30 +52,47 @@ public struct LayoutInsets: Sendable, Hashable, Equatable {
         self.trailing = horizontal
     }
 
+    private func clampZero(_ value: LayoutInsets) -> LayoutInsets {
+        return LayoutInsets(
+            absolute: value.absolute,
+            top: max(0, value.top),
+            bottom: max(0, value.bottom),
+            leading: max(0, value.leading),
+            trailing: max(0, value.trailing)
+        )
+    }
+
     /// Convert the insets to absolute left/right insets based on text direction.
-    /// - Parameter textDirection: The text direction to use for conversion.
+    /// - Parameters:
+    ///   - layoutDirection: The text direction to use for conversion.
+    ///   - disableClamping: If true, negative inset values are not clamped to zero. Defaults to false.
     /// - Returns: A tuple containing the top, bottom, left, and right insets
-    public func getAbsolute(with textDirection: TextDirection) -> LayoutInsets {
+    public func getAbsolute(
+        with layoutDirection: LayoutDirection,
+        disableClamping: Bool = false
+    ) -> LayoutInsets {
         if absolute {
-            return self
+            return disableClamping ? self : clampZero(self)
         } else {
-            switch textDirection {
+            switch layoutDirection {
             case .leftToRight:
-                return LayoutInsets(
+                let insets = LayoutInsets(
                     absolute: true,
                     top: top,
                     bottom: bottom,
                     leading: leading,
                     trailing: trailing
                 )
+                return disableClamping ? insets : clampZero(insets)
             case .rightToLeft:
-                return LayoutInsets(
+                let insets = LayoutInsets(
                     absolute: true,
                     top: top,
                     bottom: bottom,
                     leading: trailing,
                     trailing: leading
                 )
+                return disableClamping ? insets : clampZero(insets)
             }
         }
     }

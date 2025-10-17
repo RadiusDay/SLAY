@@ -68,7 +68,7 @@ open class Group: SyntheticUIObjectWithChildren {
     /// Whether the group clips its children to its bounds.
     ///
     /// This is a non-isolated way to get the current value of the clipping property.
-    public private(set) var _clipToBounds: Bool = false
+    public private(set) var _clipToBounds: Bool = true
     /// Whether the group clips its children to its bounds.
     @MainActor public var clipToBounds: Bool {
         get { _clipToBounds }

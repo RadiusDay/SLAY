@@ -9,25 +9,31 @@ public final class AbsoluteLayoutSystem: LayoutSystem {
         public var id: Self { self }
         /// The anchor point for positioning the UI object.
         /// (0,0) is the top-left corner, (1,1) is the bottom-right corner.
-        public var anchorPoint: Vector2 = Vector2(x: 0, y: 0)
+        /// In layoutDirectionAware mode, (0,0) is the top-start corner, (1,1) is the bottom-end corner.
+        public var anchorPoint: Vector2 = .zero
         /// The position of the UI object relative to its parent, using layout dimensions.
         public var x: LayoutDimension = .offset(0)
         /// The position of the UI object relative to its parent, using layout dimensions.
         public var y: LayoutDimension = .offset(0)
+        /// If the UI object should be positioned relative to layout direction.
+        public var layoutDirectionRelative: Bool = true
 
         /// Create a new instance of the layout settings.
         /// - Parameters:
         ///   - anchorPoint: The anchor point for positioning the UI object.
         ///   - x: The x position relative to the parent.
         ///   - y: The y position relative to the parent.
+        ///   - layoutDirectionRelative: If the UI object should be positioned relative to layout direction.
         public init(
-            anchorPoint: Vector2 = Vector2(x: 0, y: 0),
+            anchorPoint: Vector2 = .zero,
             x: LayoutDimension = .offset(0),
-            y: LayoutDimension = .offset(0)
+            y: LayoutDimension = .offset(0),
+            layoutDirectionRelative: Bool = true
         ) {
             self.anchorPoint = anchorPoint
             self.x = x
             self.y = y
+            self.layoutDirectionRelative = layoutDirectionRelative
         }
     }
 
@@ -72,7 +78,7 @@ public final class AbsoluteLayoutSystem: LayoutSystem {
         resolveResults: [UniqueID: LayoutSystemMeasureResult]
     ) -> [UniqueID: LayoutSystemFinalizedResult] {
         var results: [UniqueID: LayoutSystemFinalizedResult] = [:]
-        let padding = uiObject.padding.getAbsolute(with: env.textDirection)
+        let padding = uiObject.padding.getAbsolute(with: env.layoutDirection)
         let paddedPosition = Vector2(
             x: absolutePosition.x + padding.leading,
             y: absolutePosition.y + padding.top
@@ -114,9 +120,19 @@ public final class AbsoluteLayoutSystem: LayoutSystem {
                     maxHeight: resolved.maxHeight
                 )
             }
+            var childX: Double
+            if childSettings.layoutDirectionRelative && env.layoutDirection == .rightToLeft {
+                childX =
+                    paddedPosition.x + paddedSize.x
+                    - childSettings.x.resolve(parentSize: paddedSize.x)
+                    - (result.x * (1.0 - childSettings.anchorPoint.x))
+            } else {
+                childX =
+                    paddedPosition.x + childSettings.x.resolve(parentSize: paddedSize.x)
+                    - (result.x * childSettings.anchorPoint.x)
+            }
             let childPosition = Vector2(
-                x: paddedPosition.x + childSettings.x.resolve(parentSize: paddedSize.x)
-                    - (result.x * childSettings.anchorPoint.x),
+                x: childX,
                 y: paddedPosition.y + childSettings.y.resolve(parentSize: paddedSize.y)
                     - (result.y * childSettings.anchorPoint.y)
             )
@@ -139,7 +155,7 @@ public final class AbsoluteLayoutSystem: LayoutSystem {
         maxWidth: Double?,
         maxHeight: Double?,
     ) -> (Double?, Double?) {
-        let padding = uiObject.padding.getAbsolute(with: env.textDirection)
+        let padding = uiObject.padding.getAbsolute(with: env.layoutDirection)
         let paddingWidth = padding.leading + padding.trailing
         let paddingHeight = padding.top + padding.bottom
         let clamppedWidth =

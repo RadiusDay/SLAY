@@ -17,4 +17,6 @@ public struct Vector2: Sendable, Hashable, Equatable, CustomStringConvertible {
     public var description: String {
         return "<Vec2 \(x), \(y)>"
     }
+
+    public static let zero = Vector2(x: 0, y: 0)
 }

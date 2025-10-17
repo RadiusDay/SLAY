@@ -2,6 +2,62 @@ import Testing
 
 @testable import SLAY
 
+@Test func horizontalLayoutForDirection() {
+    typealias Direction = ListLayoutSystem.LayoutSettings.Direction
+    #expect(
+        Direction.horizontal.horizontalLayout() == true,
+        "Horizontal direction should be horizontal"
+    )
+    #expect(
+        Direction.horizontalReverse.horizontalLayout() == true,
+        "Horizontal reverse direction should be horizontal"
+    )
+    #expect(
+        Direction.horizontalLeftToRight.horizontalLayout() == true,
+        "Horizontal left-to-right direction should be horizontal"
+    )
+    #expect(
+        Direction.horizontalRightToLeft.horizontalLayout() == true,
+        "Horizontal right-to-left direction should be horizontal"
+    )
+    #expect(
+        Direction.vertical.horizontalLayout() == false,
+        "Vertical direction should not be horizontal"
+    )
+    #expect(
+        Direction.verticalReverse.horizontalLayout() == false,
+        "Vertical reverse direction should not be horizontal"
+    )
+}
+
+@Test func reverseLayoutForLtrDirection() {
+    typealias Direction = ListLayoutSystem.LayoutSettings.Direction
+    #expect(
+        Direction.horizontal.reversedLayout(.leftToRight) == false,
+        "Horizontal direction should not be reversed for left-to-right"
+    )
+    #expect(
+        Direction.horizontalReverse.reversedLayout(.leftToRight) == true,
+        "Horizontal reverse direction should be reversed for left-to-right"
+    )
+    #expect(
+        Direction.horizontalLeftToRight.reversedLayout(.leftToRight) == false,
+        "Horizontal left-to-right direction should not be reversed for left-to-right"
+    )
+    #expect(
+        Direction.horizontalRightToLeft.reversedLayout(.leftToRight) == true,
+        "Horizontal right-to-left direction should be reversed for left-to-right"
+    )
+    #expect(
+        Direction.vertical.reversedLayout(.leftToRight) == false,
+        "Vertical direction should not be reversed for left-to-right"
+    )
+    #expect(
+        Direction.verticalReverse.reversedLayout(.leftToRight) == true,
+        "Vertical reverse direction should be reversed for left-to-right"
+    )
+}
+
 @Test func horizontalLayoutWithFixedChildren() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
@@ -354,6 +410,40 @@ import Testing
     #expect(child2.absolutePosition == Vector2(x: 100, y: 0), "Child 2 should be at start")
 }
 
+@Test func horizontalLayoutStartReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(600)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .start
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.width = .offset(100)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    engine.compute()
+
+    #expect(
+        child1.absolutePosition == Vector2(x: 500, y: 0),
+        "Child 1 should be at start in reverse"
+    )
+    #expect(
+        child2.absolutePosition == Vector2(x: 400, y: 0),
+        "Child 2 should be at start in reverse"
+    )
+}
+
 @Test func horizontalLayoutStartOverflowDistribution() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
@@ -380,6 +470,37 @@ import Testing
 
     #expect(child1.absolutePosition == Vector2(x: 0, y: 0), "Child 1 should be at start")
     #expect(child2.absolutePosition == Vector2(x: 200, y: 0), "Child 2 should overflow to right")
+}
+
+@Test func horizontalLayoutStartOverflowReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(300)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .start
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.minWidth = .offset(200)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.minWidth = .offset(200)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 100, y: 0), "Child 1 should overflow to left")
+    #expect(
+        child2.absolutePosition == Vector2(x: -100, y: 0),
+        "Child 2 should be at start in reverse"
+    )
 }
 
 @Test func horizontalLayoutCenterDistribution() async throws {
@@ -410,6 +531,40 @@ import Testing
     #expect(child2.absolutePosition == Vector2(x: 300, y: 0), "Child 2 should be centered")
 }
 
+@Test func horizontalLayoutCenterReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(600)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .center
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.width = .offset(100)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    engine.compute()
+
+    #expect(
+        child1.absolutePosition == Vector2(x: 300, y: 0),
+        "Child 1 should be centered in reverse"
+    )
+    #expect(
+        child2.absolutePosition == Vector2(x: 200, y: 0),
+        "Child 2 should be centered in reverse"
+    )
+}
+
 @Test func horizontalLayoutCenterOverflowDistribution() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
@@ -436,6 +591,34 @@ import Testing
 
     #expect(child1.absolutePosition == Vector2(x: -50, y: 0), "Child 1 should overflow to left")
     #expect(child2.absolutePosition == Vector2(x: 150, y: 0), "Child 2 should overflow to right")
+}
+
+@Test func horizontalLayoutCenterOverflowReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(300)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .center
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.minWidth = .offset(200)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.minWidth = .offset(200)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 150, y: 0), "Child 1 should overflow to right")
+    #expect(child2.absolutePosition == Vector2(x: -50, y: 0), "Child 2 should overflow to left")
 }
 
 @Test func horizontalLayoutEndDistribution() async throws {
@@ -466,6 +649,34 @@ import Testing
     #expect(child2.absolutePosition == Vector2(x: 500, y: 0), "Child 2 should be at end")
 }
 
+@Test func horizontalLayoutEndReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(600)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .end
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.width = .offset(100)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 100, y: 0), "Child 1 should be at end in reverse")
+    #expect(child2.absolutePosition == Vector2(x: 0, y: 0), "Child 2 should be at end in reverse")
+}
+
 @Test func horizontalLayoutEndOverflowDistribution() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
@@ -492,6 +703,34 @@ import Testing
 
     #expect(child1.absolutePosition == Vector2(x: -100, y: 0), "Child 1 should overflow to left")
     #expect(child2.absolutePosition == Vector2(x: 100, y: 0), "Child 2 should overflow to right")
+}
+
+@Test func horizontalLayoutEndOverflowReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(300)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .end
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.minWidth = .offset(200)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.minWidth = .offset(200)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 200, y: 0), "Child 1 should overflow to right")
+    #expect(child2.absolutePosition == Vector2(x: 0, y: 0), "Child 2 remain at end")
 }
 
 @Test func horizontalLayoutSpaceBetweenDistribution() async throws {
@@ -526,6 +765,40 @@ import Testing
     #expect(child1.absolutePosition == Vector2(x: 0, y: 0), "Child 1 at start")
     #expect(child2.absolutePosition == Vector2(x: 250, y: 0), "Child 2 in middle")
     #expect(child3.absolutePosition == Vector2(x: 500, y: 0), "Child 3 at end")
+}
+
+@Test func horizontalLayoutSpaceBetweenReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(600)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .spaceBetween
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.width = .offset(100)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    let child3 = SyntheticUIObject()
+    child3.width = .offset(100)
+    child3.height = .offset(100)
+    root.addChild(child3)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 500, y: 0), "Child 1 at start in reverse")
+    #expect(child2.absolutePosition == Vector2(x: 250, y: 0), "Child 2 in middle in reverse")
+    #expect(child3.absolutePosition == Vector2(x: 0, y: 0), "Child 3 at end in reverse")
 }
 
 @Test func horizontalLayoutSpaceBetweenOverflowDistribution() async throws {
@@ -563,6 +836,41 @@ import Testing
     #expect(child3.absolutePosition == Vector2(x: 320, y: 0), "Child 3 should overflow to right")
 }
 
+@Test func horizontalLayoutSpaceBetweenOverflowReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(300)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        spacing: 10,
+        mainAxisDistribution: .spaceBetween
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.minWidth = .offset(150)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.minWidth = .offset(150)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    let child3 = SyntheticUIObject()
+    child3.minWidth = .offset(150)
+    child3.height = .offset(100)
+    root.addChild(child3)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 150, y: 0), "Child 1 should overflow to right")
+    #expect(child2.absolutePosition == Vector2(x: -10, y: 0), "Child 2 in middle")
+    #expect(child3.absolutePosition == Vector2(x: -170, y: 0), "Child 3 should overflow to left")
+}
+
 @Test func horizontalLayoutSpaceAroundDistribution() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
@@ -595,6 +903,46 @@ import Testing
     #expect(child1.absolutePosition == Vector2(x: 50, y: 0), "Child 1 with space around")
     #expect(child2.absolutePosition == Vector2(x: 250, y: 0), "Child 2 with space around")
     #expect(child3.absolutePosition == Vector2(x: 450, y: 0), "Child 3 with space around")
+}
+
+@Test func horizontalLayoutSpaceAroundReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(600)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .spaceAround
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.width = .offset(100)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    let child3 = SyntheticUIObject()
+    child3.width = .offset(100)
+    child3.height = .offset(100)
+    root.addChild(child3)
+
+    engine.compute()
+
+    #expect(
+        child1.absolutePosition == Vector2(x: 450, y: 0),
+        "Child 1 with space around in reverse"
+    )
+    #expect(
+        child2.absolutePosition == Vector2(x: 250, y: 0),
+        "Child 2 with space around in reverse"
+    )
+    #expect(child3.absolutePosition == Vector2(x: 50, y: 0), "Child 3 with space around in reverse")
 }
 
 @Test func horizontalLayoutSpaceAroundDistributionOverflowDistribution() async throws {
@@ -632,6 +980,41 @@ import Testing
     #expect(child3.absolutePosition == Vector2(x: 320, y: 0), "Child 3 should overflow to right")
 }
 
+@Test func horizontalLayoutSpaceAroundReverseOverflowDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(300)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        spacing: 10,
+        mainAxisDistribution: .spaceAround
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.minWidth = .offset(150)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.minWidth = .offset(150)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    let child3 = SyntheticUIObject()
+    child3.minWidth = .offset(150)
+    child3.height = .offset(100)
+    root.addChild(child3)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 150, y: 0), "Child 1 should overflow to right")
+    #expect(child2.absolutePosition == Vector2(x: -10, y: 0), "Child 2 in middle")
+    #expect(child3.absolutePosition == Vector2(x: -170, y: 0), "Child 3 should overflow to left")
+}
+
 @Test func horizontalLayoutSpaceEvenlyDistribution() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()
@@ -664,6 +1047,49 @@ import Testing
     #expect(child1.absolutePosition == Vector2(x: 100, y: 0), "Child 1 with even spacing")
     #expect(child2.absolutePosition == Vector2(x: 300, y: 0), "Child 2 with even spacing")
     #expect(child3.absolutePosition == Vector2(x: 500, y: 0), "Child 3 with even spacing")
+}
+
+@Test func horizontalLayoutSpaceEvenlyReverseDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(700)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        mainAxisDistribution: .spaceEvenly
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.width = .offset(100)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.width = .offset(100)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    let child3 = SyntheticUIObject()
+    child3.width = .offset(100)
+    child3.height = .offset(100)
+    root.addChild(child3)
+
+    engine.compute()
+
+    #expect(
+        child1.absolutePosition == Vector2(x: 500, y: 0),
+        "Child 1 with even spacing in reverse"
+    )
+    #expect(
+        child2.absolutePosition == Vector2(x: 300, y: 0),
+        "Child 2 with even spacing in reverse"
+    )
+    #expect(
+        child3.absolutePosition == Vector2(x: 100, y: 0),
+        "Child 3 with even spacing in reverse"
+    )
 }
 
 @Test func horizontalLayoutSpaceEvenlyOverflowDistribution() async throws {
@@ -699,6 +1125,41 @@ import Testing
     #expect(child1.absolutePosition == Vector2(x: 0, y: 0), "Child 1 should overflow to left")
     #expect(child2.absolutePosition == Vector2(x: 160, y: 0), "Child 2 in middle")
     #expect(child3.absolutePosition == Vector2(x: 320, y: 0), "Child 3 should overflow to right")
+}
+
+@Test func horizontalLayoutSpaceEvenlyReverseOverflowDistribution() async throws {
+    let engine = LayoutEngine()
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(300)
+    root.height = .offset(200)
+    root.layoutSystem = ListLayoutSystem()
+    root.layoutSettings = ListLayoutSystem.LayoutSettings(
+        direction: .horizontalReverse,
+        spacing: 10,
+        mainAxisDistribution: .spaceEvenly
+    )
+    engine.setRootNode(root)
+
+    let child1 = SyntheticUIObject()
+    child1.minWidth = .offset(150)
+    child1.height = .offset(100)
+    root.addChild(child1)
+
+    let child2 = SyntheticUIObject()
+    child2.minWidth = .offset(150)
+    child2.height = .offset(100)
+    root.addChild(child2)
+
+    let child3 = SyntheticUIObject()
+    child3.minWidth = .offset(150)
+    child3.height = .offset(100)
+    root.addChild(child3)
+
+    engine.compute()
+
+    #expect(child1.absolutePosition == Vector2(x: 150, y: 0), "Child 1 should overflow to right")
+    #expect(child2.absolutePosition == Vector2(x: -10, y: 0), "Child 2 in middle")
+    #expect(child3.absolutePosition == Vector2(x: -170, y: 0), "Child 3 should overflow to left")
 }
 
 @Test func horizontalLayoutCrossAxisCenter() async throws {

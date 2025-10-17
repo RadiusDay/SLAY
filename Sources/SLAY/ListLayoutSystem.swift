@@ -5,7 +5,34 @@ public final class ListLayoutSystem: LayoutSystem {
 
         public enum Direction: Int, Hashable, Equatable {
             case horizontal
+            case horizontalReverse
+            case horizontalLeftToRight
+            case horizontalRightToLeft
             case vertical
+            case verticalReverse
+
+            public func horizontalLayout() -> Bool {
+                switch self {
+                case .horizontal, .horizontalReverse, .horizontalLeftToRight,
+                    .horizontalRightToLeft:
+                    return true
+                case .vertical, .verticalReverse:
+                    return false
+                }
+            }
+
+            public func reversedLayout(_ layoutDirection: LayoutDirection) -> Bool {
+                switch self {
+                case .horizontalLeftToRight, .vertical:
+                    return false
+                case .horizontalRightToLeft, .verticalReverse:
+                    return true
+                case .horizontal:
+                    return layoutDirection == .rightToLeft
+                case .horizontalReverse:
+                    return layoutDirection == .leftToRight
+                }
+            }
         }
 
         public enum MainAxisDistribution: Int, Hashable, Equatable {
@@ -85,7 +112,7 @@ public final class ListLayoutSystem: LayoutSystem {
             public var id: Self { self }
             /// The anchor point for positioning the UI object.
             /// (0,0) is the top-left corner, (1,1) is the bottom-right corner.
-            public var anchorPoint: Vector2 = Vector2(x: 0, y: 0)
+            public var anchorPoint: Vector2 = .zero
             /// The position of the UI object relative to its parent, using layout dimensions.
             public var x: LayoutDimension = .offset(0)
             /// The position of the UI object relative to its parent, using layout dimensions.
@@ -97,7 +124,7 @@ public final class ListLayoutSystem: LayoutSystem {
             ///   - x: The x position relative to the parent.
             ///   - y: The y position relative to the parent.
             public init(
-                anchorPoint: Vector2 = Vector2(x: 0, y: 0),
+                anchorPoint: Vector2 = .zero,
                 x: LayoutDimension = .offset(0),
                 y: LayoutDimension = .offset(0)
             ) {
@@ -143,7 +170,7 @@ public final class ListLayoutSystem: LayoutSystem {
         ///   - x: The x position relative to the parent.
         ///   - y: The y position relative to the parent.
         public init(
-            anchorPoint: Vector2 = Vector2(x: 0, y: 0),
+            anchorPoint: Vector2 = .zero,
             x: LayoutDimension = .offset(0),
             y: LayoutDimension = .offset(0)
         ) {
@@ -176,18 +203,19 @@ public final class ListLayoutSystem: LayoutSystem {
         let settings =
             uiObject.layoutSettings as? ListLayoutSystem.LayoutSettings
             ?? ListLayoutSystem.LayoutSettings()
-        let padding = uiObject.padding.getAbsolute(with: env.textDirection)
+        let horizontalLayout = settings.direction.horizontalLayout()
+        let padding = uiObject.padding.getAbsolute(with: env.layoutDirection)
         let horizontalPadding = padding.leading + padding.trailing
         let verticalPadding = padding.top + padding.bottom
         let mainAxisPadding =
-            settings.direction == .horizontal ? horizontalPadding : verticalPadding
+            horizontalLayout ? horizontalPadding : verticalPadding
         let spacing = max(0, settings.spacing)
 
-        var fixedSize = settings.direction == .horizontal ? width != nil : height != nil
+        var fixedSize = horizontalLayout ? width != nil : height != nil
         var childMain = 0.0
         var childCross = 0.0
         let maxMainAxis =
-            settings.direction == .horizontal ? width ?? maxWidth : height ?? maxHeight
+            horizontalLayout ? width ?? maxWidth : height ?? maxHeight
         var totalFlexGrow = 0.0
         var totalFlexShrink = 0.0
         var sizes: [UniqueID: Vector2] = [:]
@@ -227,7 +255,7 @@ public final class ListLayoutSystem: LayoutSystem {
                 )
             }
 
-            let mainSize = settings.direction == .horizontal ? result.x : result.y
+            let mainSize = horizontalLayout ? result.x : result.y
             let gap = childMain == 0 ? 0 : spacing
 
             if childMain + mainSize + gap > maxMainAxis - mainAxisPadding {
@@ -235,7 +263,7 @@ public final class ListLayoutSystem: LayoutSystem {
             }
 
             childMain += mainSize + gap
-            childCross = max(childCross, settings.direction == .horizontal ? result.y : result.x)
+            childCross = max(childCross, horizontalLayout ? result.y : result.x)
             sizes[id] = result
         }
 
@@ -244,10 +272,10 @@ public final class ListLayoutSystem: LayoutSystem {
             return (
                 sizes,
                 Vector2(
-                    x: settings.direction == .horizontal
+                    x: horizontalLayout
                         ? max(childMain + horizontalPadding, minWidth)
                         : max(childCross + horizontalPadding, minWidth),
-                    y: settings.direction == .horizontal
+                    y: horizontalLayout
                         ? max(childCross + verticalPadding, minHeight)
                         : max(childMain + verticalPadding, minHeight)
                 )
@@ -255,7 +283,7 @@ public final class ListLayoutSystem: LayoutSystem {
         }
 
         var remainingMain =
-            (settings.direction == .horizontal ? width ?? maxWidth : height ?? maxHeight)
+            (horizontalLayout ? width ?? maxWidth : height ?? maxHeight)
             - mainAxisPadding - childMain
 
         if remainingMain < 0 && totalFlexShrink > 0 {
@@ -272,7 +300,7 @@ public final class ListLayoutSystem: LayoutSystem {
                     else { continue }
 
                     let properties = res.properties
-                    let mainSize = settings.direction == .horizontal ? size.x : size.y
+                    let mainSize = horizontalLayout ? size.x : size.y
                     let shrink = max(0, properties.shrink)
                     guard shrink > 0 else { continue }
 
@@ -280,7 +308,7 @@ public final class ListLayoutSystem: LayoutSystem {
                     let newMainSize = mainSize + shrinkAmount
 
                     let clampedMain =
-                        settings.direction == .horizontal
+                        horizontalLayout
                         ? max(res.size.minWidth, min(res.size.maxWidth, newMainSize))
                         : max(res.size.minHeight, min(res.size.maxHeight, newMainSize))
 
@@ -288,8 +316,8 @@ public final class ListLayoutSystem: LayoutSystem {
                         env: env,
                         uiObject: child,
                         resolveResults: resolveResults,
-                        width: settings.direction == .horizontal ? clampedMain : size.x,
-                        height: settings.direction == .horizontal ? size.y : clampedMain,
+                        width: horizontalLayout ? clampedMain : size.x,
+                        height: horizontalLayout ? size.y : clampedMain,
                         minWidth: res.size.minWidth,
                         minHeight: res.size.minHeight,
                         maxWidth: res.size.maxWidth,
@@ -303,22 +331,22 @@ public final class ListLayoutSystem: LayoutSystem {
                     if let ratio = child.aspectRatio {
                         result = AspectRatio.solve(
                             ratio,
-                            width: settings.direction == .horizontal ? clampedMain : size.x,
-                            height: settings.direction == .horizontal ? size.y : clampedMain,
+                            width: horizontalLayout ? clampedMain : size.x,
+                            height: horizontalLayout ? size.y : clampedMain,
                             minWidth: res.size.minWidth,
                             minHeight: res.size.minHeight,
-                            maxWidth: settings.direction == .horizontal
+                            maxWidth: horizontalLayout
                                 ? min(clampedMain, res.size.maxWidth) : size.x,
-                            maxHeight: settings.direction == .horizontal
+                            maxHeight: horizontalLayout
                                 ? size.y : min(clampedMain, res.size.maxHeight)
                         )
                     }
 
                     let actualMain = min(
-                        settings.direction == .horizontal ? result.x : result.y,
+                        horizontalLayout ? result.x : result.y,
                         clampedMain
                     )
-                    if settings.direction == .horizontal {
+                    if horizontalLayout {
                         result.x = actualMain
                     } else {
                         result.y = actualMain
@@ -353,7 +381,7 @@ public final class ListLayoutSystem: LayoutSystem {
                     else { continue }
 
                     let properties = res.properties
-                    let mainSize = settings.direction == .horizontal ? size.x : size.y
+                    let mainSize = horizontalLayout ? size.x : size.y
                     let grow = max(0, properties.grow)
                     guard grow > 0 else { continue }
 
@@ -361,7 +389,7 @@ public final class ListLayoutSystem: LayoutSystem {
                     let newMainSize = mainSize + growAmount
 
                     let clampedMain =
-                        settings.direction == .horizontal
+                        horizontalLayout
                         ? max(res.size.minWidth, min(res.size.maxWidth, newMainSize))
                         : max(res.size.minHeight, min(res.size.maxHeight, newMainSize))
 
@@ -369,8 +397,8 @@ public final class ListLayoutSystem: LayoutSystem {
                         env: env,
                         uiObject: child,
                         resolveResults: resolveResults,
-                        width: settings.direction == .horizontal ? clampedMain : size.x,
-                        height: settings.direction == .horizontal ? size.y : clampedMain,
+                        width: horizontalLayout ? clampedMain : size.x,
+                        height: horizontalLayout ? size.y : clampedMain,
                         minWidth: res.size.minWidth,
                         minHeight: res.size.minHeight,
                         maxWidth: res.size.maxWidth,
@@ -378,10 +406,10 @@ public final class ListLayoutSystem: LayoutSystem {
                     )
 
                     var result = res.size.smallestPossibleSize()
-                    switch settings.direction {
-                    case .horizontal:
+                    switch horizontalLayout {
+                    case true:
                         result.x = finalized.0 ?? clampedMain
-                    case .vertical:
+                    case false:
                         result.y = finalized.1 ?? clampedMain
                     }
                     result.x = finalized.0 ?? result.x
@@ -390,22 +418,22 @@ public final class ListLayoutSystem: LayoutSystem {
                     if let ratio = child.aspectRatio {
                         result = AspectRatio.solve(
                             ratio,
-                            width: settings.direction == .horizontal ? clampedMain : size.x,
-                            height: settings.direction == .horizontal ? size.y : clampedMain,
+                            width: horizontalLayout ? clampedMain : size.x,
+                            height: horizontalLayout ? size.y : clampedMain,
                             minWidth: res.size.minWidth,
                             minHeight: res.size.minHeight,
-                            maxWidth: settings.direction == .horizontal
+                            maxWidth: horizontalLayout
                                 ? min(clampedMain, res.size.maxWidth) : size.x,
-                            maxHeight: settings.direction == .horizontal
+                            maxHeight: horizontalLayout
                                 ? size.y : min(clampedMain, res.size.maxHeight)
                         )
                     }
 
                     let actualMain = min(
-                        settings.direction == .horizontal ? result.x : result.y,
+                        horizontalLayout ? result.x : result.y,
                         clampedMain
                     )
-                    if settings.direction == .horizontal {
+                    if horizontalLayout {
                         result.x = actualMain
                     } else {
                         result.y = actualMain
@@ -430,17 +458,17 @@ public final class ListLayoutSystem: LayoutSystem {
 
         // Final total size
         let totalMain =
-            sizes.reduce(0.0) { $0 + (settings.direction == .horizontal ? $1.value.x : $1.value.y) }
+            sizes.reduce(0.0) { $0 + (horizontalLayout ? $1.value.x : $1.value.y) }
             + max(0, Double(sizes.count - 1)) * spacing
         let totalCross = sizes.reduce(0.0) {
-            max($0, settings.direction == .horizontal ? $1.value.y : $1.value.x)
+            max($0, horizontalLayout ? $1.value.y : $1.value.x)
         }
 
         let totalSize = Vector2(
-            x: settings.direction == .horizontal
+            x: horizontalLayout
                 ? max(minWidth, min(maxWidth, totalMain + horizontalPadding))
                 : max(minWidth, min(maxWidth, totalCross + horizontalPadding)),
-            y: settings.direction == .horizontal
+            y: horizontalLayout
                 ? max(minHeight, min(maxHeight, totalCross + verticalPadding))
                 : max(minHeight, min(maxHeight, totalMain + verticalPadding))
         )
@@ -488,8 +516,10 @@ public final class ListLayoutSystem: LayoutSystem {
         let settings =
             uiObject.layoutSettings as? ListLayoutSystem.LayoutSettings
             ?? ListLayoutSystem.LayoutSettings()
+        let horizontalLayout = settings.direction.horizontalLayout()
+        let reversedLayout = settings.direction.reversedLayout(env.layoutDirection)
         var results: [UniqueID: LayoutSystemFinalizedResult] = [:]
-        let padding = uiObject.padding.getAbsolute(with: env.textDirection)
+        let padding = uiObject.padding.getAbsolute(with: env.layoutDirection)
         let paddedPosition = Vector2(
             x: absolutePosition.x + padding.leading,
             y: absolutePosition.y + padding.top
@@ -572,49 +602,73 @@ public final class ListLayoutSystem: LayoutSystem {
         var mainAxisOffset = 0.0
         let defaultSpacing = max(0, settings.spacing)
         var spacing = 0.0
-        let finalMain = settings.direction == .horizontal ? paddedSize.x : paddedSize.y
+        let finalMain = horizontalLayout ? paddedSize.x : paddedSize.y
         let totalSize = flexChildSizes.reduce(0.0) {
-            $0 + (settings.direction == .horizontal ? $1.value.x : $1.value.y)
+            $0 + (horizontalLayout ? $1.value.x : $1.value.y)
         }
         let totalPadding = max(0, Double(flexChildSizes.count - 1)) * defaultSpacing
+        let leftTopOffset = finalMain - totalSize - totalPadding
         switch settings.mainAxisDistribution {
         case .start:
-            mainAxisOffset = 0
+            mainAxisOffset = reversedLayout ? leftTopOffset : 0
             spacing = defaultSpacing
         case .center:
-            mainAxisOffset = (finalMain - totalSize - totalPadding) / 2
+            mainAxisOffset = leftTopOffset / 2
             spacing = defaultSpacing
         case .end:
-            mainAxisOffset = finalMain - totalSize - totalPadding
+            mainAxisOffset = reversedLayout ? 0 : leftTopOffset
             spacing = defaultSpacing
         case .spaceBetween:
-            mainAxisOffset = 0
             spacing =
                 flexChildSizes.count > 1
                 ? max(defaultSpacing, (finalMain - totalSize) / Double(flexChildSizes.count - 1))
                 : 0
+            mainAxisOffset =
+                reversedLayout
+                ? finalMain - totalSize - (spacing * Double(flexChildSizes.count - 1)) : 0
+
         case .spaceAround:
             spacing =
                 flexChildSizes.count > 0
                 ? max(defaultSpacing, (finalMain - totalSize) / Double(flexChildSizes.count))
                 : 0
-            mainAxisOffset = max(0, (finalMain - totalSize) / Double(flexChildSizes.count * 2))
+            let spaceBetweenOffset = max(
+                0,
+                (finalMain - totalSize) / Double(flexChildSizes.count * 2)
+            )
+            mainAxisOffset =
+                reversedLayout
+                ? finalMain - totalSize - spacing * Double(flexChildSizes.count - 1)
+                    - spaceBetweenOffset
+                : spaceBetweenOffset
         case .spaceEvenly:
             spacing =
                 flexChildSizes.count > 0
                 ? max(defaultSpacing, (finalMain - totalSize) / (Double(flexChildSizes.count) + 1))
                 : 0
-            mainAxisOffset = max(0, (finalMain - totalSize) / (Double(flexChildSizes.count) + 1))
+            let spaceEvenlyOffset = max(
+                0,
+                (finalMain - totalSize) / (Double(flexChildSizes.count) + 1)
+            )
+            mainAxisOffset =
+                reversedLayout
+                ? finalMain - totalSize - spacing * Double(flexChildSizes.count - 1)
+                    - spaceEvenlyOffset
+                : spaceEvenlyOffset
         }
 
-        let crossAxisPadded = settings.direction == .horizontal ? paddedSize.y : paddedSize.x
-        for childID in uiObject.childrenOrder {
+        let crossAxisPadded = horizontalLayout ? paddedSize.y : paddedSize.x
+        let childrenOrder =
+            reversedLayout
+            ? uiObject.childrenOrder.reversed()
+            : uiObject.childrenOrder
+        for childID in childrenOrder {
             guard let childSize = flexChildSizes[childID],
                 let (resolved, itemSettings) = flexSizes[childID]
             else { continue }
             let crossAlign = itemSettings.crossAxisAlignment ?? settings.crossAxisAlignment
-            let mainAxisSize = settings.direction == .horizontal ? childSize.x : childSize.y
-            var crossAxisSize = settings.direction == .horizontal ? childSize.y : childSize.x
+            let mainAxisSize = horizontalLayout ? childSize.x : childSize.y
+            var crossAxisSize = horizontalLayout ? childSize.y : childSize.x
             var crossAxisOffset = 0.0
             switch crossAlign {
             case .start:
@@ -626,21 +680,21 @@ public final class ListLayoutSystem: LayoutSystem {
             case .stretch:
                 crossAxisOffset = 0
                 crossAxisSize =
-                    settings.direction == .horizontal
+                    horizontalLayout
                     ? max(resolved.minHeight, min(resolved.maxHeight, crossAxisPadded))
                     : max(resolved.minWidth, min(resolved.maxWidth, crossAxisPadded))
             }
             let childPosition = Vector2(
-                x: settings.direction == .horizontal
+                x: horizontalLayout
                     ? paddedPosition.x + mainAxisOffset
                     : paddedPosition.x + crossAxisOffset,
-                y: settings.direction == .horizontal
+                y: horizontalLayout
                     ? paddedPosition.y + crossAxisOffset
                     : paddedPosition.y + mainAxisOffset
             )
             let finalSize = Vector2(
-                x: settings.direction == .horizontal ? mainAxisSize : crossAxisSize,
-                y: settings.direction == .horizontal ? crossAxisSize : mainAxisSize
+                x: horizontalLayout ? mainAxisSize : crossAxisSize,
+                y: horizontalLayout ? crossAxisSize : mainAxisSize
             )
             results[childID] = LayoutSystemFinalizedResult(
                 absolutePosition: childPosition,
@@ -663,7 +717,7 @@ public final class ListLayoutSystem: LayoutSystem {
         maxWidth: Double?,
         maxHeight: Double?,
     ) -> (Double?, Double?) {
-        let padding = uiObject.padding.getAbsolute(with: env.textDirection)
+        let padding = uiObject.padding.getAbsolute(with: env.layoutDirection)
 
         // If both width and height are set, nothing to do
         if width != nil && height != nil {

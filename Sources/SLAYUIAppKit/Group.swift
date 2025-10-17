@@ -79,6 +79,7 @@ extension Group: AppKitRenderable {
         }
         let view = NSView()
         userData = view
+        view.wantsLayer = true
         let layer = view.makeBackingLayer()
         view.layer = layer
         updateLayerProperties(layer: layer)
@@ -86,10 +87,25 @@ extension Group: AppKitRenderable {
         return view
     }
 
+    public func getContentOffset() -> Vector2 {
+        return .zero
+    }
+
     public func setBounds(_ rect: CGRect) {
         nsView.frame = rect
         let layer = nsView.makeBackingLayer()
         nsView.layer = layer
         updateLayerProperties(layer: layer)
+    }
+
+    public func addChildView(child: AppKitRenderable, size: Vector2) {
+        nsView.addSubview(child.nsView)
+        let layer = nsView.makeBackingLayer()
+        nsView.layer = layer
+        updateLayerProperties(layer: layer)
+    }
+
+    public func removeAllChildViews() {
+        nsView.subviews.forEach { $0.removeFromSuperview() }
     }
 }

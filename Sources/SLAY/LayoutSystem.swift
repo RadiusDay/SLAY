@@ -96,6 +96,15 @@ public struct LayoutSystemMeasureResult: Sendable {
 public struct LayoutSystemFinalizedResult: Sendable {
     public var absolutePosition: Vector2
     public var absoluteSize: Vector2
+
+    /// Initialize a new `LayoutSystemFinalizedResult` instance.
+    /// - Parameters:
+    ///   - absolutePosition: The absolute position of the UI element.
+    ///   - absoluteSize: The absolute size of the UI element.
+    public init(absolutePosition: Vector2, absoluteSize: Vector2) {
+        self.absolutePosition = absolutePosition
+        self.absoluteSize = absoluteSize
+    }
 }
 
 public protocol LayoutSystemPropertiesProtocol: Identifiable, Equatable {}

@@ -6,8 +6,8 @@ open class SyntheticUIObject: UIObject {
     public var id = UniqueID.generate()
 
     // Generated
-    public var absolutePosition = Vector2(x: 0, y: 0)
-    public var absoluteSize = Vector2(x: 0, y: 0)
+    public var absolutePosition: Vector2 = .zero
+    public var absoluteSize: Vector2 = .zero
 
     // Sizing
     public var minWidth: LayoutDimension? {
@@ -62,6 +62,22 @@ open class SyntheticUIObject: UIObject {
     /// Set the parent of the UI object.
     public func setLocalParent(_ parent: (any UIObject & AnyObject)?) {
         self._parent = parent
+    }
+
+    open func removeChild(_ id: UniqueID) {
+        // No-op
+    }
+
+    open func removeFromParent() {
+        self._parent?.removeChild(id)
+        self._parent = nil
+    }
+
+    deinit {
+        removeFromParent()
+        for child in children.values {
+            child.removeFromParent()
+        }
     }
 
     public init() {}

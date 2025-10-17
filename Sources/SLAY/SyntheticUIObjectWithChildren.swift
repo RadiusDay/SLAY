@@ -21,7 +21,7 @@ open class SyntheticUIObjectWithChildren: SyntheticUIObject {
 
     /// Remove a child from the UI object.
     /// - Parameter id: The unique ID of the child to remove.
-    public func removeChild(_ id: UniqueID) {
+    public override func removeChild(_ id: UniqueID) {
         guard let child = _children[id] else { return }
         _children[id] = nil
         _childrenOrder.removeAll { $0 == id }

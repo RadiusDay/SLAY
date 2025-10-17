@@ -1,24 +1,5 @@
 import SLAY
 
-public protocol TextProtocol: AnyObject {
-    /// Calculate the ideal size of the text given optional ideal dimensions.
-    /// - Parameter ideals: Optional ideal dimensions to constrain the text size.
-    /// - Returns: The calculated ideal size as a `Vector2`.
-    func calculateSize(
-        ideals: Vector2?
-    ) -> Vector2
-    /// Set the text content.
-    @MainActor func setText(_ text: String)
-    /// Set the font of the text.
-    @MainActor func setFont(_ font: Font)
-    /// Set the color of the text.
-    @MainActor func setColor(_ color: Color)
-    /// Set the multiline text alignment.
-    @MainActor func setMultilineTextAlignment(_ alignment: Text.MultilineTextAlignment)
-    /// Clip the text to its bounds.
-    @MainActor func setClipsToBounds(_ clips: Bool)
-}
-
 open class Text: SyntheticUIObject {
     /// Local platform-specific data.
     public var userData: Any? = nil
@@ -72,7 +53,7 @@ open class Text: SyntheticUIObject {
                     height: uiObject.height
                 )
             }
-            let ideals = (object as? TextProtocol)?.calculateSize(ideals: nil) ?? .init(x: 0, y: 0)
+            let ideals = (object as? TextProtocol)?.calculateSize(ideals: nil) ?? .zero
             return LayoutSystemMeasureResult(
                 minWidth: uiObject.minWidth ?? .offset(0),
                 maxWidth: uiObject.maxWidth ?? .offset(.infinity),
@@ -83,7 +64,7 @@ open class Text: SyntheticUIObject {
             )
         }
 
-        func finalize(
+        public func finalize(
             env: LayoutEngine.Environment,
             uiObject: any UIBaseObject,
             absoluteSize: Vector2,
@@ -93,7 +74,7 @@ open class Text: SyntheticUIObject {
             return [:]
         }
 
-        func getDependentSize(
+        public func getDependentSize(
             env: LayoutEngine.Environment,
             uiObject: any UIBaseObject,
             resolveResults: [UniqueID: LayoutSystemMeasureResult],
@@ -114,7 +95,7 @@ open class Text: SyntheticUIObject {
                 x: width ?? maxWidth ?? .infinity,
                 y: height ?? maxHeight ?? .infinity
             )
-            let size = (object as? TextProtocol)?.calculateSize(ideals: ideals) ?? .init(x: 0, y: 0)
+            let size = (object as? TextProtocol)?.calculateSize(ideals: ideals) ?? .zero
             return (
                 max(min(size.x, maxWidth ?? .infinity), minWidth ?? 0),
                 max(min(size.y, maxHeight ?? .infinity), minHeight ?? 0)
@@ -130,18 +111,76 @@ open class Text: SyntheticUIObject {
         set {}
     }
 
-    /// If the text should clip to its bounds.
+    /// The background color of the group.
     ///
-    /// This is a non-isolated way to get the current value of the clipsToBounds.
-    public private(set) var _clipsToBounds: Bool = true
-    /// If the text should clip to its bounds.
-    @MainActor public var clipsToBounds: Bool {
-        get {
-            _clipsToBounds
-        }
+    /// This is a non-isolated way to get the current value of the background color.
+    public private(set) var _backgroundColor: Color = .clear
+    /// The background color of the group.
+    @MainActor public var backgroundColor: Color {
+        get { _backgroundColor }
         set {
-            _clipsToBounds = newValue
-            (self as? TextProtocol)?.setClipsToBounds(newValue)
+            _backgroundColor = newValue
+            (self as? GroupProtocol)?.setBackgroundColor(backgroundColor)
+        }
+    }
+    /// The corner radius of the group.
+    ///
+    /// This is a non-isolated way to get the current value of the corner radius.
+    public private(set) var _cornerRadius: Double = 0
+    /// The corner radius of the group.
+    @MainActor public var cornerRadius: Double {
+        get { _cornerRadius }
+        set {
+            _cornerRadius = newValue
+            (self as? GroupProtocol)?.setCornerRadius(cornerRadius)
+        }
+    }
+    /// The transform origin of the group.
+    ///
+    /// This is a non-isolated way to get the current value of the transform origin.
+    public private(set) var _transformOrigin: Vector2 = Vector2(x: 0.5, y: 0.5)
+    /// The transform origin of the group.
+    @MainActor public var transformOrigin: Vector2 {
+        get { _transformOrigin }
+        set {
+            _transformOrigin = newValue
+            (self as? GroupProtocol)?.setTransformOrigin(_transformOrigin)
+        }
+    }
+    /// The rotation angle of the group in degrees.
+    ///
+    /// This is a non-isolated way to get the current value of the rotation angle.
+    public private(set) var _rotation: Double = 0
+    /// The rotation angle of the group in degrees.
+    @MainActor public var rotation: Double {
+        get { _rotation }
+        set {
+            _rotation = newValue
+            (self as? GroupProtocol)?.setRotation(_rotation)
+        }
+    }
+    /// The scale factor of the group.
+    ///
+    /// This is a non-isolated way to get the current value of the scale factor.
+    public private(set) var _scale: Double = 1.0
+    /// The scale factor of the group.
+    @MainActor public var scale: Double {
+        get { _scale }
+        set {
+            _scale = newValue
+            (self as? GroupProtocol)?.setScale(_scale)
+        }
+    }
+    /// Whether the group clips its children to its bounds.
+    ///
+    /// This is a non-isolated way to get the current value of the clipping property.
+    public private(set) var _clipToBounds: Bool = true
+    /// Whether the group clips its children to its bounds.
+    @MainActor public var clipToBounds: Bool {
+        get { _clipToBounds }
+        set {
+            _clipToBounds = newValue
+            (self as? GroupProtocol)?.setClipToBounds(clipToBounds)
         }
     }
     /// The text content of the Text object.

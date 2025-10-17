@@ -1,7 +1,7 @@
 /// Layout engine that manages the layout of UI objects.
 public final class LayoutEngine {
     public struct Environment {
-        public var textDirection: TextDirection = .leftToRight
+        public var layoutDirection: LayoutDirection = .leftToRight
     }
     public struct PlacementInfo {
         public var parent: any UIObject
@@ -14,7 +14,9 @@ public final class LayoutEngine {
 
     private var internalRoot = InternalRootUIObject()
     public private(set) var rootNode: any UIObject
-    public var env: Environment = Environment()
+    public var env: Environment = Environment() {
+        didSet { needsLayout = true }
+    }
     public var objectPlacer: ((PlacementInfo) -> Void)? = nil
     public var needsLayout: Bool = true
 
@@ -36,7 +38,7 @@ public final class LayoutEngine {
     /// - Parameters:
     ///   - object: The UI object to modify.
     ///   - engine: The new layout engine to set.
-    internal static func modifyEngine(for object: any UIObject, with engine: LayoutEngine?) {
+    public static func modifyEngine(for object: any UIObject, with engine: LayoutEngine?) {
         var stack = [object]
         while !stack.isEmpty {
             let object = stack.removeLast()
@@ -97,7 +99,7 @@ public final class LayoutEngine {
 
         // Calculate root size
         let sizing = resolveResults[rootNode.id]!
-        var resolved = sizing.resolve(in: .init(x: 0, y: 0))
+        var resolved = sizing.resolve(in: .zero)
         let finalizedSize = rootNode.layoutSystem.getDependentSize(
             env: env,
             uiObject: rootNode,
@@ -126,7 +128,7 @@ public final class LayoutEngine {
 
         // Finalize phase (top-down)
         var finalizedResults: [UniqueID: LayoutSystemFinalizedResult] = [
-            rootNode.id: .init(absolutePosition: .init(x: 0, y: 0), absoluteSize: result)
+            rootNode.id: .init(absolutePosition: .zero, absoluteSize: result)
         ]
         virtualStack = [(parent: internalRoot, object: rootNode)]
         while !virtualStack.isEmpty {

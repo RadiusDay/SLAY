@@ -256,6 +256,89 @@ import Testing
     #expect(child.absoluteSize == Vector2(x: 100, y: 100), "Child size should be (100, 100)")
 }
 
+@Test func anchoredChildWithRTL() async throws {
+    let engine = LayoutEngine()
+    engine.env.layoutDirection = .rightToLeft
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(400)
+    root.height = .offset(400)
+    engine.setRootNode(root)
+
+    let child: SyntheticUIObject = SyntheticUIObject()
+    child.width = .offset(100)
+    child.height = .offset(100)
+    child.layoutSystem = AbsoluteLayoutSystem()
+    child.layoutProperties = AbsoluteLayoutSystem.LayoutProperties(
+        anchorPoint: Vector2(x: 0, y: 0.5),
+        x: .offset(10),
+        y: .scale(0.5)
+    )
+    root.addChild(child)
+
+    engine.compute()
+
+    #expect(
+        child.absolutePosition == Vector2(x: 290, y: 150),
+        "Child position should be (290, 150)"
+    )
+    #expect(child.absoluteSize == Vector2(x: 100, y: 100), "Child size should be (100, 100)")
+}
+
+@Test func anchoredChildWithPaddingAndRTL() async throws {
+    let engine = LayoutEngine()
+    engine.env.layoutDirection = .rightToLeft
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(400)
+    root.height = .offset(400)
+    root.padding = .init(all: 50)
+    engine.setRootNode(root)
+
+    let child = SyntheticUIObject()
+    child.width = .offset(100)
+    child.height = .offset(100)
+    child.layoutSystem = AbsoluteLayoutSystem()
+    child.layoutProperties = AbsoluteLayoutSystem.LayoutProperties(
+        anchorPoint: Vector2(x: 0, y: 0.5),
+        x: .offset(10),
+        y: .scale(0.5)
+    )
+    root.addChild(child)
+
+    engine.compute()
+
+    #expect(
+        child.absolutePosition == Vector2(x: 240, y: 150),
+        "Child position should be (240, 150)"
+    )
+    #expect(child.absoluteSize == Vector2(x: 100, y: 100), "Child size should be (100, 100)")
+}
+
+@Test func anchoredChildWithRTLAndNotLayoutDirectionRelative() async throws {
+    let engine = LayoutEngine()
+    engine.env.layoutDirection = .rightToLeft
+    let root = SyntheticUIObjectWithChildren()
+    root.width = .offset(400)
+    root.height = .offset(400)
+    engine.setRootNode(root)
+
+    let child = SyntheticUIObject()
+    child.width = .offset(100)
+    child.height = .offset(100)
+    child.layoutSystem = AbsoluteLayoutSystem()
+    child.layoutProperties = AbsoluteLayoutSystem.LayoutProperties(
+        anchorPoint: Vector2(x: 0, y: 0.5),
+        x: .offset(10),
+        y: .scale(0.5),
+        layoutDirectionRelative: false
+    )
+    root.addChild(child)
+
+    engine.compute()
+
+    #expect(child.absolutePosition == Vector2(x: 10, y: 150), "Child position should be (10, 150)")
+    #expect(child.absoluteSize == Vector2(x: 100, y: 100), "Child size should be (100, 100)")
+}
+
 @Test func multipleChildren() async throws {
     let engine = LayoutEngine()
     let root = SyntheticUIObjectWithChildren()

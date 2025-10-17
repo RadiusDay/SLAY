@@ -67,4 +67,11 @@ public protocol UIBaseObject {
     var layoutSettings: (any LayoutSystemSettingsProtocol)? { get }
     /// Layout settings for the parent's layout system.
     var layoutProperties: (any LayoutSystemPropertiesProtocol)? { get }
+
+    /// Remove a child from the UI object.
+    /// - Parameter id: The unique ID of the child to remove.
+    func removeChild(_ id: UniqueID)
+
+    /// Remove the child from the parent.
+    func removeFromParent()
 }
