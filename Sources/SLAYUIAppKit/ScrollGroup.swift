@@ -251,7 +251,6 @@ extension ScrollGroup: AppKitRenderable {
             // Clamp to child size
             let clampedX = max(0, min(newContentOffsetX, max(0, size.x - newSize.x)))
             let clampedY = max(0, min(newContentOffsetY, max(0, size.y - newSize.y)))
-            print(clampedX, clampedY)
             changeContentOffsetEmbedderInternal(Vector2(x: clampedX, y: clampedY))
         }
 
